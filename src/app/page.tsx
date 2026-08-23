@@ -29,6 +29,7 @@ export default function DashboardPage() {
   const lang = user.language;
   const t = {
     greeting: lang === "kh" ? `សួស្តី ${user.firstName ?? ""}` : `Hi, ${user.firstName ?? "there"}`,
+    ledger: lang ==="kh" ? "បញ្ជីកត់ត្រារបស់អ្នក" : "Your Ledger",
     remaining: lang === "kh" ? "នៅសល់ក្នុងជុំបើកប្រាក់នេះ" : "Remaining this pay period",
     safeDaily: lang === "kh" ? "ចំណាយប្រចាំថ្ងៃដែលមានសុវត្ថិភាព" : "Safe to spend per day",
     today: lang === "kh" ? "ចំណាយថ្ងៃនេះ" : "Spent today",
@@ -43,7 +44,7 @@ export default function DashboardPage() {
     <div className="space-y-5">
       <header>
         <p className="text-paper-400 text-sm">{t.greeting}</p>
-        <h1 className="font-display text-2xl text-paper-50 mt-0.5">Your Ledger</h1>
+        <h1 className="font-display text-2xl text-paper-50 mt-0.5">{t.ledger}</h1>
       </header>
 
       {/* Hero balance card */}

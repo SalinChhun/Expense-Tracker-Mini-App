@@ -20,11 +20,13 @@ html, body {
   letter-spacing: 0.01em;
 }
 
-.card {
-  background: #101F1C;
-  border: 1px solid #22423B;
-  border-radius: 14px;
-  box-shadow: 0 1px 0 0 rgba(216,178,106,0.15) inset, 0 8px 24px -12px rgba(0,0,0,0.5);
+@layer components {
+  .card {
+    background: #101F1C;
+    border: 1px solid #22423B;
+    border-radius: 14px;
+    box-shadow: 0 1px 0 0 rgba(216,178,106,0.15) inset, 0 8px 24px -12px rgba(0,0,0,0.5);
+  }
 }
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }

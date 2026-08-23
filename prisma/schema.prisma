@@ -15,46 +15,46 @@ enum Language {
 }
 
 model User {
-  id             String   @id @default(cuid())
-  telegramId     BigInt   @unique
-  username       String?
-  firstName      String?
-  language       Language @default(en)
+  id         String   @id @default(cuid())
+  telegramId BigInt   @unique
+  username   String?
+  firstName  String?
+  language   Language @default(en)
 
-  salaryAmount   Float    @default(300)   // amount per payment
-  salarySplit    Int      @default(2)     // 1 or 2 payments/month
-  payday1        Int      @default(25)    // day-of-month
-  payday2        Int      @default(10)    // day-of-month (ignored if salarySplit = 1)
+  salaryAmount Float @default(0) // amount per payment
+  salarySplit  Int   @default(2) // 1 or 2 payments/month
+  payday1      Int   @default(25) // day-of-month
+  payday2      Int   @default(10) // day-of-month (ignored if salarySplit = 1)
 
-  eodNagEnabled  Boolean  @default(true)
-  reminderHourBreakfast Int @default(7)
-  reminderHourLunch     Int @default(12)
-  reminderHourDinner    Int @default(18)
+  eodNagEnabled         Boolean @default(true)
+  reminderHourBreakfast Int     @default(7)
+  reminderHourLunch     Int     @default(12)
+  reminderHourDinner    Int     @default(18)
 
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  categories     Category[]
-  expenses       Expense[]
+  categories Category[]
+  expenses   Expense[]
 }
 
 model Category {
-  id         String   @id @default(cuid())
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId     String
+  id     String @id @default(cuid())
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
 
-  key        String   // stable slug: housing, personal_care, food, entertainment, transport, misc, custom-*
+  key        String // stable slug: housing, personal_care, food, entertainment, transport, misc, custom-*
   nameEn     String
   nameKh     String
-  budget     Float    @default(0)  // budget per pay period
-  fixedDay   Int?     // day-of-month a fixed bill is due (e.g. rent = 10), null otherwise
-  isArchived Boolean  @default(false)
-  sortOrder  Int      @default(0)
+  budget     Float   @default(0) // budget per pay period
+  fixedDay   Int? // day-of-month a fixed bill is due (e.g. rent = 10), null otherwise
+  isArchived Boolean @default(false)
+  sortOrder  Int     @default(0)
 
-  expenses   Expense[]
+  expenses Expense[]
 
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([userId, key])
 }
@@ -66,11 +66,11 @@ model Expense {
   category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   categoryId String
 
-  amount     Float
-  note       String?
-  spentAt    DateTime @default(now())
+  amount  Float
+  note    String?
+  spentAt DateTime @default(now())
 
-  createdAt  DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([userId, spentAt])
   @@index([categoryId, spentAt])

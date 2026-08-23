@@ -16,12 +16,38 @@ type ExpenseItem = {
 
 type Range = "month" | "all";
 
+function todayStr(): string {
+  const d = new Date();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
+
+function toDateInputValue(iso: string): string {
+  const d = new Date(iso);
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
+
+function formatDisplayDate(iso: string, lang: "en" | "kh"): string {
+  const d = new Date(iso);
+  const today = new Date();
+  const yest = new Date();
+  yest.setDate(today.getDate() - 1);
+  const sameDay = (a: Date, b: Date) => a.toDateString() === b.toDateString();
+  if (sameDay(d, today)) return lang === "kh" ? "ថ្ងៃនេះ" : "Today";
+  if (sameDay(d, yest)) return lang === "kh" ? "ម្សិលមិញ" : "Yesterday";
+  return d.toLocaleDateString(lang === "kh" ? "km-KH" : undefined, { month: "short", day: "numeric", year: d.getFullYear() !== today.getFullYear() ? "numeric" : undefined });
+}
+
 export default function SpendPage() {
   const { data, loading, reload } = useMe();
   const { initData, haptic } = useTelegram();
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
+  const [spentDate, setSpentDate] = useState(() => todayStr());
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<{ ok: boolean; text: string } | null>(null);
 
@@ -33,6 +59,7 @@ export default function SpendPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editAmount, setEditAmount] = useState("");
   const [editNote, setEditNote] = useState("");
+  const [editDate, setEditDate] = useState("");
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const rangeRef = useRef(range); // avoids stale closures inside the observer callback
@@ -103,6 +130,7 @@ export default function SpendPage() {
     chooseCategory: lang === "kh" ? "ជ្រើសរើសប្រភេទ" : "Choose a category",
     amount: lang === "kh" ? "ចំនួនទឹកប្រាក់ ($)" : "Amount ($)",
     note: lang === "kh" ? "កំណត់ចំណាំ (ស្រេចចិត្ត)" : "Note (optional)",
+    date: lang === "kh" ? "កាលបរិច្ឆេទ" : "Date",
     log: lang === "kh" ? "កត់ត្រា" : "Log expense",
     logging: lang === "kh" ? "កំពុងកត់ត្រា…" : "Logging…",
     recent: lang === "kh" ? "ចំណាយថ្មីៗ" : "Recent",
@@ -127,7 +155,7 @@ export default function SpendPage() {
     try {
       await apiFetch("/api/expense", initData, {
         method: "POST",
-        body: JSON.stringify({ categoryId, amount: value, note: note || undefined }),
+        body: JSON.stringify({ categoryId, amount: value, note: note || undefined, spentAt: spentDate }),
       });
       haptic("medium");
       const cat = data.summary.categories.find((c) => c.id === categoryId)!;
@@ -146,6 +174,7 @@ export default function SpendPage() {
       }
       setAmount("");
       setNote("");
+      setSpentDate(todayStr());
       setCategoryId(null);
       reload();
       loadFirstPage(range);
@@ -160,6 +189,7 @@ export default function SpendPage() {
     setEditingId(item.id);
     setEditAmount(String(item.amount));
     setEditNote(item.note ?? "");
+    setEditDate(toDateInputValue(item.spentAt));
   }
 
   async function saveEdit(id: string) {
@@ -167,7 +197,7 @@ export default function SpendPage() {
     if (!Number.isFinite(value) || value <= 0) return;
     await apiFetch(`/api/expense/${id}`, initData, {
       method: "PATCH",
-      body: JSON.stringify({ amount: value, note: editNote || null }),
+      body: JSON.stringify({ amount: value, note: editNote || null, spentAt: editDate }),
     });
     setEditingId(null);
     await loadFirstPage(range);
@@ -229,6 +259,16 @@ export default function SpendPage() {
                 className="w-full mt-1 bg-ink-800 border border-ink-700 rounded-card px-3 py-2.5 text-sm text-paper-50 outline-none focus:border-brass-400"
             />
           </div>
+          <div>
+            <label className="text-paper-400 text-xs uppercase tracking-wide">{t.date}</label>
+            <input
+                type="date"
+                value={spentDate}
+                max={todayStr()}
+                onChange={(e) => setSpentDate(e.target.value)}
+                className="figure w-full mt-1 bg-ink-800 border border-ink-700 rounded-card px-3 py-2.5 text-sm text-paper-50 outline-none focus:border-brass-400"
+            />
+          </div>
 
           <button
               onClick={submit}
@@ -288,6 +328,13 @@ export default function SpendPage() {
                               placeholder={t.notePlaceholder}
                               className="w-full bg-ink-800 border border-ink-700 rounded px-2 py-1.5 text-sm text-paper-50 outline-none focus:border-brass-400"
                           />
+                          <input
+                              type="date"
+                              value={editDate}
+                              max={todayStr()}
+                              onChange={(e) => setEditDate(e.target.value)}
+                              className="figure w-full bg-ink-800 border border-ink-700 rounded px-2 py-1.5 text-sm text-paper-50 outline-none focus:border-brass-400"
+                          />
                           <div className="flex gap-2">
                             <button onClick={() => saveEdit(item.id)} className="flex-1 py-1.5 rounded bg-brass-500 text-ink-950 text-xs font-medium">
                               {t.save}
@@ -309,7 +356,10 @@ export default function SpendPage() {
                               {item.note && <p className="text-paper-400 text-[11px] truncate">{item.note}</p>}
                             </div>
                           </div>
-                          <span className="figure text-sm text-paper-200 shrink-0 ml-2">${item.amount.toFixed(2)}</span>
+                          <div className="flex flex-col items-end shrink-0 ml-2">
+                            <span className="figure text-sm text-paper-200">${item.amount.toFixed(2)}</span>
+                            <span className="text-paper-400 text-[10px]">{formatDisplayDate(item.spentAt, lang)}</span>
+                          </div>
                         </button>
                     )}
                   </div>

@@ -4,6 +4,7 @@
     { "path": "/api/cron/meal-reminder?meal=lunch", "schedule": "0 5 * * *" },
     { "path": "/api/cron/meal-reminder?meal=dinner", "schedule": "0 11 * * *" },
     { "path": "/api/cron/eod-nag", "schedule": "0 14 * * *" },
-    { "path": "/api/cron/bill-due", "schedule": "0 1 * * *" }
+    { "path": "/api/cron/bill-due", "schedule": "0 1 * * *" },
+    { "path": "/api/cron/auto-food", "schedule": "5 17 * * *" }
   ]
 }

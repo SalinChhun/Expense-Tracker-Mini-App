@@ -19,8 +19,28 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Category not found" }, { status: 404 });
   }
 
+  // Optional: caller can log an expense for a past (or same-day) date via a
+  // "YYYY-MM-DD" string from a date picker. We anchor it to the current
+  // time-of-day so ordering among same-day expenses stays sensible, and
+  // reject anything in the future.
+  let spentAt = new Date();
+  if (typeof body.spentAt === "string" && body.spentAt) {
+    const picked = new Date(`${body.spentAt}T00:00:00`);
+    if (Number.isNaN(picked.getTime())) {
+      return NextResponse.json({ error: "Invalid date" }, { status: 400 });
+    }
+    const now = new Date();
+    if (picked.getFullYear() === now.getFullYear() && picked.getMonth() === now.getMonth() && picked.getDate() === now.getDate()) {
+      spentAt = now; // today: keep the real time so "today's total" and ordering are accurate
+    } else if (picked.getTime() > now.getTime()) {
+      return NextResponse.json({ error: "Date cannot be in the future" }, { status: 400 });
+    } else {
+      spentAt = picked;
+    }
+  }
+
   const expense = await prisma.expense.create({
-    data: { userId: user.id, categoryId, amount, note, spentAt: new Date() },
+    data: { userId: user.id, categoryId, amount, note, spentAt },
   });
 
   return NextResponse.json({ ok: true, expense });

@@ -10,7 +10,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (!existing) return NextResponse.json({ error: "Expense not found" }, { status: 404 });
 
     const body = await req.json();
-    const data: { amount?: number; note?: string | null; categoryId?: string } = {};
+    const data: { amount?: number; note?: string | null; categoryId?: string; spentAt?: Date } = {};
 
     if (body.amount !== undefined) {
         const amount = Number(body.amount);
@@ -26,6 +26,20 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         const cat = await prisma.category.findFirst({ where: { id: body.categoryId, userId: user.id } });
         if (!cat) return NextResponse.json({ error: "Category not found" }, { status: 404 });
         data.categoryId = body.categoryId;
+    }
+    if (typeof body.spentAt === "string" && body.spentAt) {
+        // Accepts "YYYY-MM-DD" from a date picker. Preserve the original time-of-day
+        // when only the date changed, otherwise defaults to midnight for a new date.
+        const picked = new Date(`${body.spentAt}T00:00:00`);
+        if (Number.isNaN(picked.getTime())) {
+            return NextResponse.json({ error: "Invalid date" }, { status: 400 });
+        }
+        if (picked.getTime() > Date.now()) {
+            return NextResponse.json({ error: "Date cannot be in the future" }, { status: 400 });
+        }
+        const original = new Date(existing.spentAt);
+        picked.setHours(original.getHours(), original.getMinutes(), original.getSeconds());
+        data.spentAt = picked;
     }
 
     const updated = await prisma.expense.update({ where: { id: params.id }, data });

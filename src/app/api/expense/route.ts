@@ -31,14 +31,31 @@ export async function GET(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
-  const limit = Math.min(Number(searchParams.get("limit") ?? 20), 100);
+  const limit = Math.min(Number(searchParams.get("limit") ?? 15), 50);
+  const cursor = searchParams.get("cursor"); // expense id to page after
+  const range = searchParams.get("range") === "all" ? "all" : "month"; // default: current month
+
+  const where: {
+    userId: string;
+    spentAt?: { gte: Date };
+  } = { userId: user.id };
+
+  if (range === "month") {
+    const now = new Date();
+    where.spentAt = { gte: new Date(now.getFullYear(), now.getMonth(), 1) };
+  }
 
   const expenses = await prisma.expense.findMany({
-    where: { userId: user.id },
-    orderBy: { spentAt: "desc" },
-    take: limit,
+    where,
+    orderBy: [{ spentAt: "desc" }, { id: "desc" }],
+    take: limit + 1, // fetch one extra to know if there's a next page
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     include: { category: true },
   });
 
-  return NextResponse.json({ expenses });
+  const hasMore = expenses.length > limit;
+  const page = hasMore ? expenses.slice(0, limit) : expenses;
+  const nextCursor = hasMore ? page[page.length - 1].id : null;
+
+  return NextResponse.json({ expenses: page, nextCursor, hasMore });
 }
